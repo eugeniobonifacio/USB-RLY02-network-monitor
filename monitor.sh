@@ -46,23 +46,26 @@ fi
 
 echo "Tentativi falliti in precedenza $RETRIES"
 
-MAX_REACHED=0
-if [ $RETRIES -ge $MAX_RETRIES ]; then
-	echo "Il router è stato spento"
-	MAX_REACHED=1
-
-	echo "Invio email..."
-	echo "Il router è stato spento" | mail -s "Monitor rete internet" root
-fi
-
 # Controllo gli host
 FAILED=0
 for HOST in $HOSTS
 do
 	echo "Controllo '$HOST'..."
 
-	wget -q --tries=10 --timeout=20 -O - $HOST &> /dev/null
-	if [[ $? -eq 0 ]]; then
+	ONLINE=0
+	HTML=`wget -q --tries=10 --timeout=20 -O - $HOST`
+
+	if [ $? -eq 0 ]; then
+	
+		#my router redirects to mobile backup if no line is detected
+		echo $HTML | grep "192.168.1.1" &> /dev/null
+		
+		if [ $? -ne 0 ]; then
+			ONLINE=1
+		fi	
+	fi
+
+	if [ $ONLINE -eq 1 ]; then
 	        echo "Online"
 	else
 		echo "Offline"
@@ -76,7 +79,7 @@ if [ $FAILED -gt 0 ]; then
 
 	RETRIES=$(( $RETRIES+1 ))
 	
-	if [ $MAX_REACHED -eq 0 ] && [ $RETRIES -ge $MAX_RETRIES ]; then
+	if [ $RETRIES -ge $MAX_RETRIES ] && [ $(($RETRIES % $MAX_RETRIES)) -eq 0 ]; then
 		echo "Spegnimento Router"
 		
 		if [ -f $CONTROLLER ]; then
@@ -92,6 +95,14 @@ if [ $FAILED -gt 0 ]; then
 	fi
 else
 	echo "Rete accessibile"
+	
+	if [ $RETRIES -ge $MAX_RETRIES ]; then
+		echo "Il router è stato spento"
+
+		echo "Invio email..."
+		echo "Il router è stato spento" | mail -s "Monitor rete internet" root
+	fi
+	
 	RETRIES=0
 	MAX_REACHED=0
 fi
