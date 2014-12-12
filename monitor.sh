@@ -17,8 +17,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+CONTROLLER_DIR="`dirname \"$0\"`"
+
 DATE=$(date +"%d-%m-%Y %T")
-CONTROLLER="rly02.py"
+CONTROLLER="$CONTROLLER_DIR/rly02.py"
 FILE="monitor.dat"
 HOSTS="http://www.google.com http://192.168.1.14"
 #HOSTS="http://www.google.com http://www.repubblica.it"
@@ -26,6 +28,11 @@ RETRIES=`cat $FILE`
 MAX_RETRIES=2
 
 echo $DATE
+
+if [ ! -f $CONTROLLER ]; then
+	echo "Controller non trovato"
+	exit 1
+fi
 
 # Controllo esistenza del file
 test -f $FILE
